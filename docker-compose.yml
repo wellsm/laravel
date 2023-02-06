@@ -1,0 +1,43 @@
+version: '3.9'
+
+volumes:
+  app-mysql-data:
+    driver: local
+
+services:
+  app-php:
+    build: ./docker/php
+    container_name: app-php
+    user: "1000:1000"
+    volumes:
+      - ./:/var/www/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  app-nginx:
+    build: ./docker/nginx
+    container_name: app-nginx
+    ports:
+      - 4000:80
+    depends_on:
+      - app-php
+
+  app-mysql:
+    build: ./docker/mysql
+    container_name: app-mysql
+    volumes:
+      - app-mysql-data:/var/lib/mysql
+    ports:
+      - "3304:3306"
+    environment:
+      - "MYSQL_DATABASE=mysql"
+      - "MYSQL_ROOT_PASSWORD=root"
+
+  app-redis:
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    container_name: app-redis
+    volumes:
+      - ./storage/cache/data:/data
+    ports:
+      - 6379:6379
